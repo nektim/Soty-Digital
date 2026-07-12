@@ -4,7 +4,7 @@ ini_set('display_errors', 0);
 
 session_start();
 ini_set('session.cookie_httponly', 1);
-ini_set('session.cookie_secure', 0);   // только если HTTPS
+ini_set('session.cookie_secure', 1);   // только если HTTPS
 ini_set('session.cookie_samesite', 'Strict');
 header('Content-Type: application/json');
 
