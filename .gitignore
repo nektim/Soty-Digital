@@ -1,6 +1,8 @@
 # Конфиденциальные данные
 server/config.php
-# Пользовательские данные (динамически изменяемые)
-server/data/projects.json
+# Игнорируем все файлы внутри data
+server/data/*
+# Но разрешаем .gitkeep
+!server/data/.gitkeep
 # Файлы Apache (если не нужны)
 .htaccess
