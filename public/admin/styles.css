@@ -1,0 +1,131 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+body {
+    font-family: 'Segoe UI', sans-serif;
+    background: #f4f7fa;
+    color: #333;
+}
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+}
+.admin-header {
+    background: #2AABEE;
+    color: #fff;
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.admin-header h1 {
+    font-size: 1.5rem;
+}
+.btn {
+    background: #2AABEE;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 1rem;
+    text-decoration: none;
+    display: inline-block;
+}
+.btn:hover {
+    background: #1a8ecb;
+}
+.logout-btn {
+    background: #e74c3c;
+}
+.logout-btn:hover {
+    background: #c0392b;
+}
+.add-btn {
+    margin-bottom: 20px;
+}
+.projects-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.projects-table th, .projects-table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #eee;
+}
+.projects-table th {
+    background: #f8f9fa;
+}
+.btn-sm {
+    padding: 5px 10px;
+    font-size: 0.9rem;
+    margin-right: 5px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.btn-edit { background: #3498db; color: #fff; }
+.btn-delete { background: #e74c3c; color: #fff; }
+
+.login-box {
+    background: #fff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    width: 350px;
+    margin: 100px auto;
+}
+.login-box h1 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+.form-group {
+    margin-bottom: 15px;
+}
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: inherit;
+}
+.error {
+    color: #e74c3c;
+    margin-bottom: 10px;
+}
+#edit-form-container {
+    margin-top: 30px;
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.btn-upload {
+    background: #27ae60;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    width: 36px;
+    height: 36px;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.btn-upload:hover {
+    background: #219a52;
+}

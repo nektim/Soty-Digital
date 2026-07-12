@@ -1,0 +1,6 @@
+# Конфиденциальные данные
+server/config.php
+# Пользовательские данные (динамически изменяемые)
+server/data/projects.json
+# Файлы Apache (если не нужны)
+.htaccess
