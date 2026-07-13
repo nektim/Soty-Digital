@@ -133,7 +133,7 @@ async function editProject(id = null) {
             </div>
             <div class="form-group">
                 <label>Полное описание</label>
-                <textarea name="fullDescription" rows="6">${escapeHtml(project.fullDescription)}</textarea>
+                <textarea name="fullDescription" rows="8">${escapeHtml(project.fullDescription)}</textarea>
             </div>
             <div class="form-group">
                 <label>Скриншоты (по URL на строку)</label>
