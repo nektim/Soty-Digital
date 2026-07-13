@@ -138,7 +138,7 @@ async function editProject(id = null) {
             <div class="form-group">
                 <label>Скриншоты (по URL на строку)</label>
                 <div style="display: flex; gap: 8px; align-items: flex-start;">
-                    <textarea name="screenshots" rows="4" style="flex: 1;">${escapeHtml(project.screenshots)}</textarea>
+                    <textarea name="screenshots" rows="5" style="flex: 1;">${escapeHtml(project.screenshots)}</textarea>
                     <button type="button" class="btn-upload" data-target="screenshots" title="Загрузить скриншот">+</button>
                 </div>
             </div>
