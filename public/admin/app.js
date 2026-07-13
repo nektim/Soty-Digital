@@ -68,6 +68,92 @@ async function showPanel() {
     renderProjects(projects);
 }
 
+// --- Настройки сайта ---
+async function showSiteSettings() {
+    const content = await api('/site_content.php');
+    const container = document.getElementById('app');
+    
+    container.innerHTML = `
+        <div class="admin-header">
+            <h1>Настройки сайта</h1>
+            <button class="btn logout-btn" onclick="showPanel()">← Назад</button>
+        </div>
+        <div class="container">
+            <form id="settings-form">
+                <h2>Главный экран (Hero)</h2>
+                <div class="form-group">
+                    <label>Заголовок</label>
+                    <input type="text" name="hero_title" value="${escapeHtml(content.hero_title)}" required>
+                </div>
+                <div class="form-group">
+                    <label>Подзаголовок</label>
+                    <input type="text" name="hero_subtitle" value="${escapeHtml(content.hero_subtitle)}">
+                </div>
+                <div class="form-group">
+                    <label>Текст кнопки</label>
+                    <input type="text" name="hero_button_text" value="${escapeHtml(content.hero_button_text)}">
+                </div>
+
+                <h2>О нас</h2>
+                <div class="form-group">
+                    <label>Заголовок секции</label>
+                    <input type="text" name="about_title" value="${escapeHtml(content.about_title)}">
+                </div>
+                <div class="form-group">
+                    <label>Абзацы (по одному на строку)</label>
+                    <textarea name="about_paragraphs" rows="6">${escapeHtml((content.about_paragraphs || []).join('\n'))}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>Технологии</label>
+                    <input type="text" name="about_tech" value="${escapeHtml(content.about_tech)}">
+                </div>
+
+                <h2>Контакты</h2>
+                <div class="form-group">
+                    <label>Заголовок секции</label>
+                    <input type="text" name="contact_title" value="${escapeHtml(content.contact_title)}">
+                </div>
+                <div class="form-group">
+                    <label>Подзаголовок</label>
+                    <input type="text" name="contact_subtitle" value="${escapeHtml(content.contact_subtitle)}">
+                </div>
+                <div class="form-group">
+                    <label>Текст приглашения</label>
+                    <textarea name="contact_text" rows="3">${escapeHtml(content.contact_text)}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>Telegram (ссылка)</label>
+                    <input type="text" name="contact_telegram" value="${escapeHtml(content.contact_telegram)}">
+                </div>
+                <div class="form-group">
+                    <label>VK (ссылка)</label>
+                    <input type="text" name="contact_vk" value="${escapeHtml(content.contact_vk)}">
+                </div>
+                <div class="form-group">
+                    <label>Email (адрес)</label>
+                    <input type="text" name="contact_email" value="${escapeHtml(content.contact_email)}">
+                </div>
+
+                <button type="submit" class="btn">Сохранить</button>
+            </form>
+        </div>`;
+
+    document.getElementById('settings-form').onsubmit = async e => {
+        e.preventDefault();
+        const form = e.target;
+        const data = Object.fromEntries(new FormData(form));
+        // Превращаем строку с абзацами в массив
+        data.about_paragraphs = data.about_paragraphs.split('\n').map(s => s.trim()).filter(s => s);
+        const res = await api('/site_content.php', { method: 'PUT', body: JSON.stringify(data) });
+        if (res.success) {
+            alert('Настройки сохранены');
+            showSiteSettings(); // обновить форму
+        } else {
+            alert('Ошибка: ' + (res.error || ''));
+        }
+    };
+}
+
 function renderProjects(projects) {
     let rows = '';
     if (!projects.length) rows = '<tr><td colspan="4">Нет проектов</td></tr>';
@@ -90,6 +176,7 @@ function renderProjects(projects) {
             <button class="btn logout-btn" onclick="logout()">Выйти</button>
         </div>
         <div class="container">
+            <button class="btn add-btn" onclick="showSiteSettings()">⚙️ Настройки сайта</button>
             <button class="btn add-btn" onclick="editProject()">+ Добавить</button>
             <table class="projects-table">
                 <thead><tr><th>ID</th><th>Заголовок</th><th>Краткое описание</th><th>Действия</th></tr></thead>
