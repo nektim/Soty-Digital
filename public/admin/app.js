@@ -68,90 +68,283 @@ async function showPanel() {
     renderProjects(projects);
 }
 
-// --- Настройки сайта ---
+// --- Настройки сайта (новая версия с превью) ---
+let siteContentCache = {}; // кеш текущих данных с сервера
+
 async function showSiteSettings() {
+    // 1. Загружаем актуальные данные с сервера (или берём из кеша)
     const content = await api('/site_content.php');
+    siteContentCache = content;
+
     const container = document.getElementById('app');
-    
     container.innerHTML = `
         <div class="admin-header">
             <h1>Настройки сайта</h1>
             <button class="btn logout-btn" onclick="showPanel()">← Назад</button>
         </div>
-        <div class="container">
-            <form id="settings-form">
+        <div class="settings-layout">
+            <!-- Левая колонка: форма -->
+            <div class="settings-form-col">
+                <!-- Табы -->
+                <div class="settings-tabs" id="settings-tabs">
+                    <button class="settings-tab active" data-tab="hero">Hero</button>
+                    <button class="settings-tab" data-tab="about">О нас</button>
+                    <button class="settings-tab" data-tab="contact">Контакты</button>
+                </div>
+
+                <!-- Контейнер для форм разделов -->
+                <div id="settings-forms">
+                    ${renderHeroForm(content)}
+                    ${renderAboutForm(content)}
+                    ${renderContactForm(content)}
+                </div>
+            </div>
+
+            <!-- Правая колонка: превью -->
+            <div class="settings-preview-col">
+                <div class="preview-phone">
+                    <div class="preview-screen" id="preview-screen">
+                        <!-- Превью будет заполняться динамически -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // 2. Инициализируем табы
+    initSettingsTabs();
+
+    // 3. Загружаем превью и вешаем слушатели на поля
+    updatePreview(content);
+    attachLivePreviewListeners();
+
+    // 4. Восстанавливаем черновики из localStorage
+    restoreDrafts();
+}
+
+// --- Рендер форм по разделам ---
+function renderHeroForm(data) {
+    return `
+        <div class="settings-panel active" data-panel="hero">
+            <form id="hero-form" class="settings-section-form">
                 <h2>Главный экран (Hero)</h2>
                 <div class="form-group">
                     <label>Заголовок</label>
-                    <input type="text" name="hero_title" value="${escapeHtml(content.hero_title)}" required>
+                    <input type="text" name="hero_title" value="${escapeHtml(data.hero_title || '')}" data-preview="hero-title" data-type="html">
                 </div>
                 <div class="form-group">
                     <label>Подзаголовок</label>
-                    <input type="text" name="hero_subtitle" value="${escapeHtml(content.hero_subtitle)}">
+                    <input type="text" name="hero_subtitle" value="${escapeHtml(data.hero_subtitle || '')}" data-preview="hero-subtitle" data-type="text">
                 </div>
                 <div class="form-group">
                     <label>Текст кнопки</label>
-                    <input type="text" name="hero_button_text" value="${escapeHtml(content.hero_button_text)}">
+                    <input type="text" name="hero_button_text" value="${escapeHtml(data.hero_button_text || '')}" data-preview="hero-button" data-type="text">
                 </div>
+                <button type="submit" class="btn">Сохранить раздел</button>
+                <span class="form-status" data-status="hero"></span>
+            </form>
+        </div>`;
+}
 
+function renderAboutForm(data) {
+    const paragraphs = (data.about_paragraphs || []).join('\n');
+    return `
+        <div class="settings-panel" data-panel="about">
+            <form id="about-form" class="settings-section-form">
                 <h2>О нас</h2>
                 <div class="form-group">
                     <label>Заголовок секции</label>
-                    <input type="text" name="about_title" value="${escapeHtml(content.about_title)}">
+                    <input type="text" name="about_title" value="${escapeHtml(data.about_title || '')}" data-preview="about-title" data-type="text">
                 </div>
                 <div class="form-group">
                     <label>Абзацы (по одному на строку)</label>
-                    <textarea name="about_paragraphs" rows="6">${escapeHtml((content.about_paragraphs || []).join('\n'))}</textarea>
+                    <textarea name="about_paragraphs" rows="6" data-preview="about-text" data-type="paragraphs">${escapeHtml(paragraphs)}</textarea>
                 </div>
                 <div class="form-group">
-                    <label>Технологии</label>
-                    <input type="text" name="about_tech" value="${escapeHtml(content.about_tech)}">
+                    <label>Технологии (строка в конце)</label>
+                    <input type="text" name="about_tech" value="${escapeHtml(data.about_tech || '')}" data-preview="about-tech" data-type="text">
                 </div>
+                <button type="submit" class="btn">Сохранить раздел</button>
+                <span class="form-status" data-status="about"></span>
+            </form>
+        </div>`;
+}
 
+function renderContactForm(data) {
+    return `
+        <div class="settings-panel" data-panel="contact">
+            <form id="contact-form" class="settings-section-form">
                 <h2>Контакты</h2>
                 <div class="form-group">
                     <label>Заголовок секции</label>
-                    <input type="text" name="contact_title" value="${escapeHtml(content.contact_title)}">
+                    <input type="text" name="contact_title" value="${escapeHtml(data.contact_title || '')}" data-preview="contact-title" data-type="text">
                 </div>
                 <div class="form-group">
                     <label>Подзаголовок</label>
-                    <input type="text" name="contact_subtitle" value="${escapeHtml(content.contact_subtitle)}">
+                    <input type="text" name="contact_subtitle" value="${escapeHtml(data.contact_subtitle || '')}" data-preview="contact-subtitle" data-type="text">
                 </div>
                 <div class="form-group">
                     <label>Текст приглашения</label>
-                    <textarea name="contact_text" rows="3">${escapeHtml(content.contact_text)}</textarea>
+                    <textarea name="contact_text" rows="3" data-preview="contact-text" data-type="text">${escapeHtml(data.contact_text || '')}</textarea>
                 </div>
                 <div class="form-group">
                     <label>Telegram (ссылка)</label>
-                    <input type="text" name="contact_telegram" value="${escapeHtml(content.contact_telegram)}">
+                    <input type="text" name="contact_telegram" value="${escapeHtml(data.contact_telegram || '')}" data-preview="contact-links" data-type="links">
                 </div>
                 <div class="form-group">
                     <label>VK (ссылка)</label>
-                    <input type="text" name="contact_vk" value="${escapeHtml(content.contact_vk)}">
+                    <input type="text" name="contact_vk" value="${escapeHtml(data.contact_vk || '')}" data-preview="contact-links" data-type="links">
                 </div>
                 <div class="form-group">
                     <label>Email (адрес)</label>
-                    <input type="text" name="contact_email" value="${escapeHtml(content.contact_email)}">
+                    <input type="text" name="contact_email" value="${escapeHtml(data.contact_email || '')}" data-preview="contact-links" data-type="links">
                 </div>
-
-                <button type="submit" class="btn">Сохранить</button>
+                <button type="submit" class="btn">Сохранить раздел</button>
+                <span class="form-status" data-status="contact"></span>
             </form>
         </div>`;
+}
 
-    document.getElementById('settings-form').onsubmit = async e => {
-        e.preventDefault();
-        const form = e.target;
-        const data = Object.fromEntries(new FormData(form));
-        // Превращаем строку с абзацами в массив
+// --- Логика табов ---
+function initSettingsTabs() {
+    const tabs = document.querySelectorAll('.settings-tab');
+    const panels = document.querySelectorAll('.settings-panel');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const target = tab.dataset.tab;
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            panels.forEach(p => {
+                p.classList.toggle('active', p.dataset.panel === target);
+            });
+        });
+    });
+    // Показываем первый таб
+    tabs[0]?.click();
+}
+
+// --- Живое превью ---
+function updatePreview(data) {
+    const preview = document.getElementById('preview-screen');
+    if (!preview) return;
+
+    const heroTitle = data.hero_title || 'Создаём Telegram-ботов<br>для вашего бизнеса';
+    const heroSub = data.hero_subtitle || 'Автоматизируем общение с клиентами, приём заказов и поддержку.';
+    const heroBtn = data.hero_button_text || 'Обсудить проект';
+    const aboutTitle = data.about_title || 'О компании SotyDigital';
+    const aboutParagraphs = data.about_paragraphs || [];
+    const aboutTech = data.about_tech || '';
+    const contactTitle = data.contact_title || 'Свяжитесь с нами';
+    const contactSub = data.contact_subtitle || 'Мы всегда открыты для новых проектов и готовы ответить на ваши вопросы.';
+    const contactText = data.contact_text || 'Чтобы заказать разработку Telegram-бота или получить бесплатную консультацию, просто напишите нам.';
+    const tg = data.contact_telegram || '#';
+    const vk = data.contact_vk || '#';
+    const email = data.contact_email || '';
+
+    let aboutHTML = aboutParagraphs.map(p => `<p style="font-size:0.8rem;color:#4a4a6a">${p}</p>`).join('');
+    if (aboutTech) aboutHTML += `<p style="font-size:0.8rem;color:#4a4a6a"><strong>Технологии:</strong> ${aboutTech}</p>`;
+
+    let linksHTML = '';
+    if (tg) linksHTML += `<a href="${tg}" target="_blank" style="display:inline-block;padding:8px 16px;background:#2AABEE;color:#fff;border-radius:20px;text-decoration:none;font-size:0.7rem;">Telegram</a>`;
+    if (vk) linksHTML += `<a href="${vk}" target="_blank" style="display:inline-block;padding:8px 16px;background:#0077FF;color:#fff;border-radius:20px;text-decoration:none;font-size:0.7rem;">ВКонтакте</a>`;
+    if (email) linksHTML += `<a href="mailto:${email}" style="display:inline-block;padding:8px 16px;background:#555;color:#fff;border-radius:20px;text-decoration:none;font-size:0.7rem;">Email</a>`;
+
+    preview.innerHTML = `
+        <div style="background:#f0f5ff;padding:20px 10px;text-align:center;">
+            <h2 style="font-size:1.4rem;color:#071c4b;">${heroTitle}</h2>
+            <p style="font-size:0.9rem;color:#4a4a6a;">${heroSub}</p>
+            <a href="#" style="display:inline-block;margin-top:10px;padding:10px 20px;background:#0556db;color:#fff;border-radius:20px;text-decoration:none;font-size:0.8rem;">${heroBtn}</a>
+        </div>
+        <div style="padding:20px 10px;">
+            <h3 style="font-size:1.2rem;color:#071c4b;">${aboutTitle}</h3>
+            ${aboutHTML}
+        </div>
+        <div style="padding:20px 10px;">
+            <h3 style="font-size:1.2rem;color:#071c4b;">${contactTitle}</h3>
+            <p style="font-size:0.8rem;color:#4a4a6a;">${contactSub}</p>
+            <p style="font-size:0.8rem;color:#4a4a6a;">${contactText}</p>
+            <div style="display:flex;gap:5px;flex-wrap:wrap;justify-content:center;margin-top:10px;">${linksHTML}</div>
+        </div>
+    `;
+}
+
+// Обновление превью при вводе
+function attachLivePreviewListeners() {
+    document.querySelectorAll('[data-preview]').forEach(el => {
+        el.addEventListener('input', () => {
+            const form = el.closest('form');
+            if (!form) return;
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+            // Объединяем с текущим кешем, чтобы сохранить остальные разделы
+            const merged = { ...siteContentCache, ...data };
+            // Обрабатываем about_paragraphs как массив
+            if (merged.about_paragraphs && typeof merged.about_paragraphs === 'string') {
+                merged.about_paragraphs = merged.about_paragraphs.split('\n').map(s => s.trim()).filter(s => s);
+            }
+            updatePreview(merged);
+            // Сохраняем черновик
+            saveDraft(form.id, data);
+        });
+    });
+}
+
+// --- Сохранение раздела ---
+document.addEventListener('submit', async (e) => {
+    if (!e.target.classList.contains('settings-section-form')) return;
+    e.preventDefault();
+    const form = e.target;
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+    // Преобразуем about_paragraphs
+    if (data.about_paragraphs && typeof data.about_paragraphs === 'string') {
         data.about_paragraphs = data.about_paragraphs.split('\n').map(s => s.trim()).filter(s => s);
-        const res = await api('/site_content.php', { method: 'PUT', body: JSON.stringify(data) });
-        if (res.success) {
-            alert('Настройки сохранены');
-            showSiteSettings(); // обновить форму
-        } else {
-            alert('Ошибка: ' + (res.error || ''));
-        }
-    };
+    } else if (!data.about_paragraphs) {
+        data.about_paragraphs = [];
+    }
+
+    // Обновляем кеш и отправляем на сервер
+    Object.assign(siteContentCache, data);
+    const res = await api('/site_content.php', { method: 'PUT', body: JSON.stringify(siteContentCache) });
+    const statusEl = form.querySelector('.form-status');
+    if (res.success) {
+        statusEl.textContent = '✓ Сохранено';
+        statusEl.className = 'form-status success';
+        // Очищаем черновик для этого раздела
+        clearDraft(form.id);
+    } else {
+        statusEl.textContent = '✗ Ошибка: ' + (res.error || '');
+        statusEl.className = 'form-status error';
+    }
+    setTimeout(() => { statusEl.textContent = ''; statusEl.className = 'form-status'; }, 3000);
+});
+
+// --- Черновики ---
+function saveDraft(formId, data) {
+    try {
+        localStorage.setItem('soty_draft_' + formId, JSON.stringify(data));
+    } catch (e) {}
+}
+function clearDraft(formId) {
+    localStorage.removeItem('soty_draft_' + formId);
+}
+function restoreDrafts() {
+    ['hero-form','about-form','contact-form'].forEach(id => {
+        const saved = localStorage.getItem('soty_draft_' + id);
+        if (!saved) return;
+        try {
+            const data = JSON.parse(saved);
+            const form = document.getElementById(id);
+            if (!form) return;
+            Object.entries(data).forEach(([key, val]) => {
+                const field = form.elements[key];
+                if (field) field.value = val;
+            });
+            // Обновляем кеш и превью
+            Object.assign(siteContentCache, data);
+            updatePreview(siteContentCache);
+        } catch (e) {}
+    });
 }
 
 function renderProjects(projects) {
